@@ -123,5 +123,21 @@ public class QuerydslBasicTest {
 
 
     }
+
+    @Test
+    public void seach(){
+
+        Member member1 = queryFactory
+                .selectFrom(member) // == .select(member).From(member)
+                .where(member.username.eq("member1").and(member.age.eq(10))) // AND 연산자를 검색 조건에 활용
+                .fetchOne();                                                        // 더 많은 쿼리 연산자가 있다. PPT 참조!
+        assertThat(member1.getUsername()).isEqualTo("member1");
+        assertThat(member1.getAge()).isEqualTo(10);
+
+    }
+
+
+
+
 }
 
