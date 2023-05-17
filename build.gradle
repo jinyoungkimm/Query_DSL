@@ -23,11 +23,13 @@ repositories {
 	mavenCentral()
 }
 
-dependencies {                                https://github.com/jinyoungkimm/Query_DSL.git
+dependencies {
 
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 
+
+	implementation 'com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.5.7'
 
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'com.h2database:h2'
@@ -45,5 +47,4 @@ dependencies {                                https://github.com/jinyoungkimm/Qu
 tasks.named('test') {
 	useJUnitPlatform()
 }
-
 
