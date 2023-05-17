@@ -14,6 +14,7 @@ import study.querydsl.entity.QMember;
 import study.querydsl.entity.Team;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static study.querydsl.entity.QMember.member;
 
 @SpringBootTest
 @Transactional
@@ -60,7 +61,7 @@ public class QuerydslBasicTest {
 
     }
 
-    @Test
+    @Test // Querydsl 사용법 1]
     void startQuerydslV1(){
 
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
@@ -77,7 +78,7 @@ public class QuerydslBasicTest {
          assertThat(member1.getUsername()).isEqualTo("member1");
     }
 
-    @Test
+    @Test// Querydsl 사용법 2]
     void startQuerydslV2(){
 
         //필드와, beforeEach()를 이용하여 아래 코드 부분을 대체할 수가 있다.
@@ -95,6 +96,32 @@ public class QuerydslBasicTest {
         assertThat(member1.getUsername()).isEqualTo("member1");
     }
 
+    @Test  // Querydsl 사용법 3]
+    void startQuerydslV3(){
 
+        QMember m = member; // ==  QMember m = new QMember("mermber1")
+
+        Member member1 = queryFactory
+                .select(m)
+                .from(m)
+                .where(m.username.eq("member1")) //파라미터 바인딩 처리
+                .fetchOne();
+
+        assertThat(member1.getUsername()).isEqualTo("member1");
+    }
+
+    @Test  // Querydsl 사용법 4] 가장 권장함
+    void startQuerydslV4() {
+
+        Member member1 = queryFactory
+                .select(member) // static import로 더 깔끔히 가능!
+                .from(member)
+                .where(member.username.eq("member1")) //파라미터 바인딩 처리
+                .fetchOne();
+
+        assertThat(member1.getUsername()).isEqualTo("member1");
+
+
+    }
 }
 
