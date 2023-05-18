@@ -3,6 +3,7 @@ package study.querydsl;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
@@ -437,23 +438,106 @@ public class QuerydslBasicTest {
 
     }
 
+    /**
+     * 나이가 가장 많은 회원 조회!
+     */
+
+    @Test
+    void subQuery1(){
+
+        // 서브 쿼리에서의 QMember와 서브 쿼리 밖에서의 QMember의 alias는 겹치면 안 되님깐,
+        // 서브 쿼리에서 사용할 QMember를 따로 생성!
+        QMember memberSub = new QMember("memberSub");
+
+        List<Member> fetch = queryFactory
+                .selectFrom(member)
+                .where(member.age.eq(
+
+                        //서브 쿼리
+                        JPAExpressions.select(memberSub.age.max())
+                                .from(memberSub)
+                ))
+                .fetch();
+
+        for (Member fetch1 : fetch) {
+            System.out.println("fetch1 = " + fetch1);
+        }
 
 
+    }
+
+    /**
+     * 나이가 평균 이상인 회원!
+     */
+
+    @Test
+    void subQuery2(){
+
+        // 서브 쿼리에서의 QMember와 서브 쿼리 밖에서의 QMember의 alias는 겹치면 안 되님깐,
+        // 서브 쿼리에서 사용할 QMember를 따로 생성!
+        QMember memberSub = new QMember("memberSub");
+
+        List<Member> fetch = queryFactory
+                .selectFrom(member)
+                .where(member.age.goe(
+
+                        //서브 쿼리
+                        JPAExpressions.select(memberSub.age.avg())
+                                .from(memberSub)
+                ))
+                .fetch();
+
+        for (Member fetch1 : fetch) {
+            System.out.println("fetch1 = " + fetch1);
+        }
+
+    }
+
+    @Test
+    void subQuery2_IN(){
+
+        // 서브 쿼리에서의 QMember와 서브 쿼리 밖에서의 QMember의 alias는 겹치면 안 되님깐,
+        // 서브 쿼리에서 사용할 QMember를 따로 생성!
+        QMember memberSub = new QMember("memberSub");
+
+        List<Member> fetch = queryFactory
+                .selectFrom(member)
+                .where(member.age.in(
+
+                        //서브 쿼리
+                        JPAExpressions.select(memberSub.age)
+                                .from(memberSub)
+                                .where(memberSub.age.gt(10))
+                ))
+                .fetch();
+
+        for (Member fetch1 : fetch) {
+            System.out.println("fetch1 = " + fetch1);
+        }
+
+    }
+
+    @Test // where이 아닌, select안에서 서브 쿼리 사용!
+    void subQuery3(){
+
+        QMember memberSub = new QMember("memberSub");
+
+        List<Tuple> fetch = queryFactory
+
+                .select(member.username,
+
+                        JPAExpressions.select(memberSub.age.avg())
+                                .from(memberSub)
+                )
+                .from(member)
+                .fetch();
+
+        for (Tuple tuple : fetch) {
+            System.out.println("tuple = " + tuple);
+        }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+    }
 
 
 
@@ -461,4 +545,10 @@ public class QuerydslBasicTest {
 
 
 }
+
+
+
+
+
+
 
