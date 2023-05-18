@@ -3,6 +3,7 @@ package study.querydsl;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
@@ -539,10 +540,47 @@ public class QuerydslBasicTest {
 
     }
 
+    @Test
+    void basicCase(){
+
+        List<String> fetch = queryFactory.select(member.age
+                        .when(10).then("열살")
+                        .when(20).then("스무 살")
+                        .otherwise("기타"))
+                .from(member)
+                .fetch();
+
+        for (String s : fetch) {
+            System.out.println("s = " + s);
+        }
+    }
+
+    @Test // case문이 복잡할 떄 : CaseBuilder 사용!
+    void complexCase(){
 
 
+        List<String> result = queryFactory
+                .select(new CaseBuilder() // 이 case문은 basicCase()의 문법으로는 안 된다.
+                        .when(member.age.between(0, 20)).then("0~20살")
+                        .when(member.age.between(21, 30)).then("21살~30살")
+                        .otherwise("기타"))
+                .from(member)
+                .fetch();
+
+        for (String s : result) {
+            System.out.println("s = " + s);
+        }
 
 
+    }
+
+    /**
+     * 강사 왈 : CASE문은 애플리케이션 레벨에서 처리를 해라!!
+     * -> DB로부터는 GROUPING, 최소한의 필터링으로 데이터를 들고 오고,
+     * 그 데이터들을 이용하여 계산, 가공하는 것은 애플리케이션 레벨에서 하는 것이 옳다고 함
+     * CASE문도 자기는 애플리케이션 레벨에서 코딩을 한다고 함
+     *
+     */
 
 }
 
