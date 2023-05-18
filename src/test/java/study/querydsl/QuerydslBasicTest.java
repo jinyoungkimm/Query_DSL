@@ -885,11 +885,12 @@ public class QuerydslBasicTest {
 
         return queryFactory
                 .selectFrom(member)
+                // where()의 매개변수는 Predicate로 받는데, BooleanExpression은 Predicate 인터페이스의 구현체이므로, 받을 수가 있다.
                 .where(allEq(usernameCond,ageCond)) // 조립해서 사용 가능!
                 .fetch();
     }
 
-
+    // Predicate는 [인터페이스], BooleanExpression은 Predicate의 구현체이다.
     private BooleanExpression usernameEq_1(String usernameCond) {
 
         if(usernameCond != null)
@@ -912,6 +913,35 @@ public class QuerydslBasicTest {
         return usernameEq_1(usernameCond)
                 .and(ageEq_1(ageCond));
     }
+
+
+    @Test
+    void bulkUpdate(){
+
+        // bulk 연산 시, 주의 사항!!
+        // -> execute()가 실행되면, context에 어떤 쿼리문이 저장돼 있든 무시하고 단독으로 db에 날라간다.
+        // 이때 Context에 있는 쿼리문을 모두 flush 해주고 난 뒤에, execute()를 실행시켜 줘야
+        // 데이터 불일치와 같은 문제가 안 생긴다.
+        entityManager.flush();
+        entityManager.clear(); // clear()를 하지 않으면, 벌크 연산이 반영되지 않은 [기존]의 데이터들이 캐싱돼서 온다.
+
+        // update된 row 수 반환!
+        long count = queryFactory
+                .update(member)
+                .set(member.username, "비회원")
+                .where(member.age.lt(28))
+                .execute();
+    }
+
+
+
+
+
+
+
+
+
+
 
 
 }
