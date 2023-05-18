@@ -206,5 +206,43 @@ public class QuerydslBasicTest {
 
     }
 
+    @Test
+    public void paging1(){
+
+
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .orderBy(member.username.desc()) // 페이징을 확인할 떄에는, 보통 sorting을 넣는다. 왜냐하면, sorting을 해놔야 paging이
+                // 잘 됐는지 확인할 수가 있다.
+                .offset(1)
+                .limit(2)
+                .fetch();
+        for (Member member1 : result) {
+            System.out.println("member1 = " + member1);
+        }
+        assertThat(result.size()).isEqualTo(2);
+
+    }
+
+    @Test
+    public void paging2(){
+
+        // 전체 totalCount가 필요할 때!
+        QueryResults<Member> result = queryFactory
+                .selectFrom(member)
+                .orderBy(member.username.desc())
+                .offset(1)
+                .limit(2)
+                .fetchResults();
+
+        assertThat(result.getTotal()).isEqualTo(4); // 여기서 count() 쿼리 1번
+        assertThat(result.getResults().size()).isEqualTo(2); // 여기서 결과 조회 쿼리 1번
+
+
+        assertThat(result.getLimit()).isEqualTo(2);
+        assertThat(result.getOffset()).isEqualTo(1);
+
+    }
+
 }
 
