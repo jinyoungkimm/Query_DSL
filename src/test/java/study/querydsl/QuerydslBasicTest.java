@@ -4,6 +4,7 @@ package study.querydsl;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
@@ -581,6 +582,81 @@ public class QuerydslBasicTest {
      * CASE문도 자기는 애플리케이션 레벨에서 코딩을 한다고 함
      *
      */
+
+    @Test
+    void constant(){
+
+        List<Tuple> a = queryFactory
+                .select(member.username, Expressions.constant("A")) // select의 projection에 무조건 상수 "A"를 집어 넣음.
+                .from(member)
+                .fetch();
+        for (Tuple tuple : a) {
+            System.out.println("tuple = " + tuple);
+        }
+    }
+
+
+    @Test
+    void concat(){
+
+        List<String> results = queryFactory
+                .select(member.username.concat("_").concat(member.age.stringValue()))
+                .from(member)
+                .where(member.username.eq("member1"))
+                .fetch();
+
+        for (String result : results) {
+            System.out.println("result = " + result);
+        }
+    }
+
+    @Test // Projection 대상이 하나 : 반환 타입을 명확히 지정 가능
+    void simpleProjection(){
+
+        QMember m1 = new QMember("m1");
+
+        //username의 타입은 String이다.
+        List<String> results = queryFactory
+                .select(m1.username)
+                .from(m1)
+                .fetch();
+        for (String result : results) {
+            System.out.println("result = " + result);
+        }
+
+    }
+
+
+    @Test // Projection 대상이 2개 이상 : Tuple,Dto로 반환 받아야 한다.
+    void tupleProjections(){
+
+        QMember m1 = new QMember("m1");
+
+        //Tuple로 받아야 한다.
+        List<Tuple> results =
+                queryFactory
+                .select(m1.username,m1.age)
+                .from(m1)
+                .fetch();
+
+        for (Tuple result : results) {
+
+            String username = result.get(m1.username);
+            System.out.println("username = " + username);
+            int age = result.get(m1.age);
+            System.out.println("age = " + age);
+
+
+        }
+
+
+    }
+
+
+
+
+
+
 
 }
 
