@@ -3,6 +3,8 @@ package study.querydsl;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
@@ -16,6 +18,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
+import study.querydsl.dto.MemberDto;
+import study.querydsl.dto.UserDto;
 import study.querydsl.entity.Member;
 import study.querydsl.entity.QMember;
 import study.querydsl.entity.QTeam;
@@ -652,10 +656,112 @@ public class QuerydslBasicTest {
 
     }
 
+    @Test // Projection 대상이 2개 이상 : Tuple,Dto로 반환 받아야 한다.
+    void findDtoByJPQL(){
+
+        List<MemberDto> result = entityManager.createQuery(
+                // new 연산자를 사용하여 Dto로 바로 변환 -> 지저분하다
+                // => Querydsl은 이 문제를 해결!(Property 접근법, 필드 직접 접근, 생성자 사용)
+                        "SELECT new study.querydsl.dto.MemberDto(m.username,m.age) FROM Member m"
+                        , MemberDto.class
+                )
+                .getResultList();
+
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
+        }
+
+    }
+
+    @Test // [Property 접근법] : getter를 사용하여 property에 접근하고, setter를 이용하여 값을 삽입
+    void findDtoBySetter(){
+
+        List<MemberDto> results = queryFactory
+                .select(Projections.bean(MemberDto.class,
+                        member.username,
+                        member.age))
+                .from(member)
+                .fetch();
+
+        for (MemberDto result : results) {
+            System.out.println("result = " + result);
+        }
 
 
+    }
+
+    @Test // [필드 직접 접근] : 이건 getter, setter 없이, 필드에 바로 값을 꽂음.
+    void findDtoByField(){
+
+        List<MemberDto> results = queryFactory
+                .select(Projections.fields(MemberDto.class, // bean() -> fields()로 변경
+                        member.username,
+                        member.age))
+                .from(member)
+                .fetch();
+
+        for (MemberDto result : results) {
+            System.out.println("result = " + result);
+        }
+    }
+
+    @Test // [생성자접근]
+    void findDtoByConstructor(){
+
+        List<MemberDto> results = queryFactory
+                .select(Projections.constructor(MemberDto.class, // fields() -> constructor()로 변경
+                        member.username, // MemberDto에서 정의한 생성자의 매개변수 순서에 맞게 값들을 세팅해야 한다.
+                        member.age))    // MemberDto(String username,int age) -> member.username,member.age
+                .from(member)           // -> 필드명까지 같을 필요 x.(생성자에 의한 Projection은 매개 변수의 [타입]만 일치하면 된다.)
+                .fetch();               // 즉, member.[username], member.[age]이 아니여도,
+                                        //예를 들어, 필드명을 다음과 같이 적어도도  member.name의 [타입]이 String, member.[aaa] 부분이 int형이면 ㄱㅊ.
+
+        for (MemberDto result : results) {
+            System.out.println("result = " + result);
+        }
+    }
+
+    @Test
+    void findUserDto(){
+
+        List<UserDto> results = queryFactory
+                .select(Projections.fields(UserDto.class, // Dto가 MemberDto에서 UserDto로 바뀜.
+                        member.username.as("name"), // UserDto의 필드에는 [username]이라는 필드명이 없다.(결과를 출력하면, name = [null]로 뜰 것이다.)
+                        member.age))                    // 고로, as를 사용하여서 필드명을 매칭시켜 줘야 한다.
+                .from(member)
+                .fetch();
+
+        for (UserDto result : results) {
+            System.out.println("result = " + result);
+        }
+    }
+
+    @Test // 서브 쿼리에 alias를 설정하여, UserDto의 필드에 서브쿼리의 결과 값을 삽입 가능하다.
+    void findUserDtoSubQuery(){
+
+        QMember memberSub = new QMember("memberSub");
 
 
+        List<UserDto> results = queryFactory
+                .select(Projections.fields(UserDto.class,
+
+                        member.username.as("name"),
+
+                        //서브 쿼리의 결과를 UserDto의 "name"필드에 삽입
+                        ExpressionUtils
+                                .as(
+                                JPAExpressions
+                                .select(memberSub.age.max())
+                                .from(memberSub),"age") // 서브 쿼리의 결과값의 alias를 "age"로 줘서, UserDto::name에 삽입
+
+                        ))
+                .from(member)
+                .fetch();
+
+        for (UserDto result : results) {
+            System.out.println("result = " + result);
+        }
+    }
 
 
 }
