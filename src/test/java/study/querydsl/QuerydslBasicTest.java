@@ -1,6 +1,7 @@
 package study.querydsl;
 
 
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.ExpressionUtils;
@@ -787,9 +788,45 @@ public class QuerydslBasicTest {
         for (MemberDto result : results) {
             System.out.println("result = " + result);
         }
+    }
+
+    @Test
+    void dynamicQuery_BooleanBuilder(){
+
+        String usernameParam = "member1";
+        Integer ageParam = 10;
+
+        List<Member> result = searchMember1(usernameParam,ageParam);
+        assertThat(result.size()).isEqualTo(1);
+
+    }
+
+    private List<Member> searchMember1(String usernameCond, Integer ageCond) {
+
+        BooleanBuilder builder = new BooleanBuilder();
+        // BooleanBuilder builder = new BooleanBuilder(member.username.eq(usernameCond)); // 반드시, usernameCond이 들어 오는 게 보장되는 경우, 이렇게 생성자에 직접 넣을 수도 있다.
+        // 만약, username이 매개 변수로 들어 왔다면, 아래의 SELECTION CONDITION을 WHERE절에 삽입
+        if(usernameCond != null){
+            builder
+                    .and(member.username.eq(usernameCond));
+        }
+        // 만약, age가 매개 변수로 들어 왔다면, 아래의 SELECTION CONDITION을 WHERE절에 삽입
+        if(ageCond != null){
+            builder
+                    .and(member.age.eq(ageCond));
+        }
+
+        return queryFactory
+                .selectFrom(member)
+
+                .where(  builder  ) // SELECTION CONDTION을 동적으로 생성한 것을 BooleanBuilder에 담아 넣음.
+                //.where(  builder.and(member.username.eq("member1"))   ) // builder+[.and(), .or()]로 추가적인 조건을 넣을 수도 있다.
+                // .where(  builder.or(member.username.eq("member1"))   )
+                .fetch();
 
 
     }
+
 
 }
 
