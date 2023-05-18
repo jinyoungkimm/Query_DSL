@@ -22,7 +22,6 @@ class MemberTest {
     EntityManager entityManager;
 
     @Test
-
     void testEntity(){
 
         Team teamA = new Team("teamA");
