@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 import study.querydsl.dto.MemberDto;
+import study.querydsl.dto.QMemberDto;
 import study.querydsl.dto.UserDto;
 import study.querydsl.entity.Member;
 import study.querydsl.entity.QMember;
@@ -763,6 +764,32 @@ public class QuerydslBasicTest {
         }
     }
 
+
+    @Test // @QueryProjection을 사용한 Dto 전환!
+    void findDtoByQueryProjection(){
+
+
+        List<MemberDto> results = queryFactory
+                .select(new QMemberDto(member.username, member.age))
+                .from(member)
+                .fetch();
+
+        // Q.이 방식은 findDtoByConstructor()의 방식과 무엇이 다를까??
+        // A. 이 방식은 예를 들어, 생성자의 매개변수로 member.username,member.age외에 실수로 member.teamname을 넣어도
+        // 실행 해야지만 에러가 나는 [런타임]에러가 난다.
+        // 그러나, 위 방식은 [컴파일 타임] 에러로 잡을 수가 있는 굉장한 장점이 있다.
+        // 단점도 존재한다.
+        // @QueryProjection은 Querydsl 라이브러리가 제공하는 기능이다.
+        // -> 즉, Querydsl에 [의존적]이게 된다.
+        // 만약, 도중에 querydsl을 사용하지 못하게 하면, DTO로 변환하는 코드를 Querydsl 없이 다시 새로 고쳐야 한다.
+
+
+        for (MemberDto result : results) {
+            System.out.println("result = " + result);
+        }
+
+
+    }
 
 }
 
