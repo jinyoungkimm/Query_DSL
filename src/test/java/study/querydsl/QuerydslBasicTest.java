@@ -5,6 +5,8 @@ import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.PersistenceUnit;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -393,6 +395,69 @@ public class QuerydslBasicTest {
         }
 
     }
+
+    @PersistenceUnit
+    EntityManagerFactory emf;
+    @Test
+    void fetchJoinNo(){
+
+        //DB로부터 쿼리를 들고 오겠다.
+        entityManager.flush();
+        entityManager.clear();
+
+        Member findMember = queryFactory
+                .selectFrom(member)
+                .where(member.username.eq("member1"))
+                .fetchOne();
+
+        // Team 엔티티가 초기화됬는지 안 됐는지 알려준다.(Team에는 Lazy가 걸려 있다)
+        boolean loaded = emf.getPersistenceUnitUtil().isLoaded(findMember.getTeam());
+
+        assertThat(loaded).isFalse();
+
+    }
+
+    @Test
+    void fetchJoinYes(){
+
+        //DB로부터 쿼리를 들고 오겠다.
+        entityManager.flush();
+        entityManager.clear();
+
+        Member findMember = queryFactory
+                .selectFrom(member)
+                .join(member.team,team).fetchJoin() // fetch join
+                .where(member.username.eq("member1"))
+                .fetchOne();
+
+        // Team 엔티티가 초기화됬는지 안 됐는지 알려준다.(Team에는 Lazy가 걸려 있다)
+        boolean loaded = emf.getPersistenceUnitUtil().isLoaded(findMember.getTeam());
+
+        assertThat(loaded).isTrue();
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 }
