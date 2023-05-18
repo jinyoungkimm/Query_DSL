@@ -300,7 +300,48 @@ public class QuerydslBasicTest {
     }
 
 
+    @Test
+    void join(){
 
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .join(member.team, QTeam.team)
+                .where(QTeam.team.name.eq("teamA"))
+                .fetch();
+
+        assertThat(result)
+                .extracting("username")
+                .containsExactly("member1","member2");
+    }
+
+    /**
+     * 세타 조인
+     * -> 회원 이름이 팀 이름과 같은 회원을 조회!
+     */
+
+    @Test
+    void theta_join(){ // [cross join] : 연관 관계가 설정돼 있지 않는 엔티티들끼리도 JOIN이 가능하다.
+
+        entityManager.persist(new Member("teamA"));
+        entityManager.persist(new Member("teamB"));
+
+        List<Member> result = queryFactory
+                .select(member)
+                .from(member, QTeam.team) // 연관 관계가 없어도, cross join으로 join 가능!!
+                .where(member.username.eq(QTeam.team.name))
+                .fetch();
+        assertThat(result)
+                .extracting("username")
+                .containsExactly("teamA","teamB");
+
+    }
+
+    /**
+     * THETA JOIN에는 한가지 제약이 있다.
+     * -> THETA JOIN 시, Outer Join이 불가능하다.
+     * 그러나, 최근의 하이버네이트에서는 join이 [on]을 사용하여, theta join을 하면서도 [on]을 사용하여 outer join 기능을 지원하였다.
+     * ( 자세한 건 다음 시간에!!! )
+     */
 
 
 }
