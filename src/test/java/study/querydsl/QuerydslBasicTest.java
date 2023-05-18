@@ -5,7 +5,9 @@ import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
@@ -790,7 +792,7 @@ public class QuerydslBasicTest {
         }
     }
 
-    @Test
+    @Test // 동적 쿼리 해결법 1] BooleanBuilder 사용
     void dynamicQuery_BooleanBuilder(){
 
         String usernameParam = "member1";
@@ -825,6 +827,90 @@ public class QuerydslBasicTest {
                 .fetch();
 
 
+    }
+
+    @Test // 동적 쿼리 해결법 2] Where 다중 파라미터 사용(BooleanBuilder보다 이 방식이 훨씬 코드 깔끔하고 좋다고 권장)
+    void dynamic_WhereParam_0(){
+
+
+        String usernameParam = "member1";
+        Integer ageParam = 10;
+
+        List<Member> result = searchMember2_0(usernameParam,ageParam);
+        assertThat(result.size()).isEqualTo(1);
+
+
+
+    }
+
+    private List<Member> searchMember2_0(String usernameCond, Integer ageCond) {
+
+         return queryFactory
+                 .selectFrom(member)
+                 .where(usernameEq(usernameCond),ageEq(ageCond))
+                 //where(null,null)일 경우 아무런 selection condition이 안 들어 감
+                 //where(null,member.age.eq(ageCond))이면, age에 대한 selection condition이 동적으로 만들어 짐.
+                 .fetch();
+    }
+    private Predicate usernameEq(String usernameCond) {
+
+        if(usernameCond != null)
+            return member.username.eq(usernameCond);
+        else
+            return null;
+    }
+
+    private Predicate ageEq(Integer ageCond) {
+        if(ageCond != null)
+            return member.age.eq(ageCond);
+        else
+            return null;
+    }
+
+    void dynamic_WhereParam_1(){ // 이 방식을 더 선호!
+
+
+        String usernameParam = "member1";
+        Integer ageParam = 10;
+
+        // 동적 쿼리르 메서드의 조합으로 만들 수가 있다(메서드를 재사용하여 여러 가지 동적 쿼리의 조합을 만들 수가 있다)
+        List<Member> result = searchMember2_1(usernameParam,ageParam);
+
+        assertThat(result.size()).isEqualTo(1);
+
+
+    }
+
+    private List<Member> searchMember2_1(String usernameCond, Integer ageCond) {
+
+        return queryFactory
+                .selectFrom(member)
+                .where(allEq(usernameCond,ageCond)) // 조립해서 사용 가능!
+                .fetch();
+    }
+
+
+    private BooleanExpression usernameEq_1(String usernameCond) {
+
+        if(usernameCond != null)
+            return member.username.eq(usernameCond);
+        else
+            return null;
+    }
+
+    private BooleanExpression ageEq_1(Integer ageCond) {
+
+        if(ageCond != null)
+            return member.age.eq(ageCond);
+        else
+            return null;
+    }
+
+    private BooleanExpression allEq(String usernameCond, Integer ageCond) {
+
+        // 동적 쿼리를 조립할 수가 있는 장점이 있다.
+        return usernameEq_1(usernameCond)
+                .and(ageEq_1(ageCond));
     }
 
 
