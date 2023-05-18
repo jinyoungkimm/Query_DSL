@@ -11,6 +11,7 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
@@ -934,9 +935,39 @@ public class QuerydslBasicTest {
     }
 
 
+    @Test
+    void sqlFunction1(){
+
+        List<String> result = queryFactory
+                .select( // replace function 호출, 참고로 replace function이 H2Dialect 클래스에 등록이 돼 있어야 한다.
+                        Expressions.stringTemplate("function('replace', {0}, {1}, {2})",
+                                member.username, "member", "M")) // member.username의 "member" 부분을 모두 "M"으로 바꿀 거임.
+                .from(member)
+                .fetch();
+
+        for (String s : result) {
+            System.out.println("s = " + s);
+        }
 
 
+    }
 
+    @Test
+    void sqlFunction2(){
+
+        List<String> result = queryFactory
+                .select(member.username)
+                .from(member)
+               // .where(member.username.eq(Expressions.stringTemplate("function('lower',{0})", member.username)))
+                // lower()과 같은 ANSCI 표준 함수는 기본적으로 Querydsl에서 내장하고 있기에, 아래와 같은 사용법이 가능하다.
+                .where(member.username.eq(member.username.lower()))
+                .fetch();
+        for (String s : result) {
+            System.out.println("s = " + s);
+        }
+
+
+    }
 
 
 
