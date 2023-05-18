@@ -20,6 +20,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static study.querydsl.entity.QMember.member;
+import static study.querydsl.entity.QTeam.team;
 
 @SpringBootTest
 @Transactional
@@ -281,19 +282,19 @@ public class QuerydslBasicTest {
 
 
         List<Tuple> result = queryFactory
-                .select(QTeam.team.name, member.age.avg())
+                .select(team.name, member.age.avg())
                 .from(member)
-                .join(member.team, QTeam.team)  // JOIN 부분은 나중에 설명을 함.
-                .groupBy(QTeam.team.name)
+                .join(member.team, team)  // JOIN 부분은 나중에 설명을 함.
+                .groupBy(team.name)
                 .fetch();
 
         Tuple teamA = result.get(0);
         Tuple teamB = result.get(1);
 
-        assertThat(teamA.get(QTeam.team.name)).isEqualTo("teamA");
+        assertThat(teamA.get(team.name)).isEqualTo("teamA");
         assertThat(teamA.get(member.age.avg())).isEqualTo(10);
 
-        assertThat(teamB.get(QTeam.team.name)).isEqualTo("teamB");
+        assertThat(teamB.get(team.name)).isEqualTo("teamB");
         assertThat(teamB.get(member.age.avg())).isEqualTo(10);
 
 
@@ -305,8 +306,8 @@ public class QuerydslBasicTest {
 
         List<Member> result = queryFactory
                 .selectFrom(member)
-                .join(member.team, QTeam.team)
-                .where(QTeam.team.name.eq("teamA"))
+                .join(member.team, team)
+                .where(team.name.eq("teamA"))
                 .fetch();
 
         assertThat(result)
@@ -320,15 +321,15 @@ public class QuerydslBasicTest {
      */
 
     @Test
-    void theta_join(){ // [cross join] : 연관 관계가 설정돼 있지 않는 엔티티들끼리도 JOIN이 가능하다.
+    void theta_join_no_on(){ // [cross join] : 연관 관계가 설정돼 있지 않는 엔티티들끼리도 JOIN이 가능하다.
 
         entityManager.persist(new Member("teamA"));
         entityManager.persist(new Member("teamB"));
 
         List<Member> result = queryFactory
                 .select(member)
-                .from(member, QTeam.team) // 연관 관계가 없어도, cross join으로 join 가능!!
-                .where(member.username.eq(QTeam.team.name))
+                .from(member, team) // 연관 관계가 없어도, cross join으로 join 가능!!
+                .where(member.username.eq(team.name))
                 .fetch();
         assertThat(result)
                 .extracting("username")
@@ -342,6 +343,56 @@ public class QuerydslBasicTest {
      * 그러나, 최근의 하이버네이트에서는 join이 [on]을 사용하여, theta join을 하면서도 [on]을 사용하여 outer join 기능을 지원하였다.
      * ( 자세한 건 다음 시간에!!! )
      */
+
+
+    /**
+     * 예) 회원과 팀을 조인하면서, 팀 이름이 teamA인 팀만 조인, 회원은 [모두](=left outer join) 조회
+     * JPQL: SELECT m,t from Member m left join m.team t [on] t.name = 'teamA'
+     */
+
+    @Test
+    void join_on_filtering(){
+
+        List<Tuple> result = queryFactory
+                .select(member, team)
+                .from(member)
+                .leftJoin(member.team, team).on(team.name.eq("teamA"))
+                .fetch();
+        for (Tuple tuple : result) {
+            System.out.println("tuple = " + tuple);
+        }
+
+    }
+
+    /**
+     * 세타 조인
+     * -> 회원 이름이 팀 이름과 같은 회원을 left outer 조회!
+     */
+
+    @Test
+    void theta_join_on(){ // [cross join] : 연관 관계가 설정돼 있지 않는 엔티티들끼리도 JOIN이 가능하다.
+
+        entityManager.persist(new Member("teamA"));
+        entityManager.persist(new Member("teamB"));
+
+        List<Tuple> result = queryFactory
+                .select(member,team)
+
+                .from(member)
+                .leftJoin(team) // == FROM [member left join team]
+                // 원래 leftjoin()은 leftJoin(member,tema) 이런 식으로 적으면, PK,FK로 join(left join)을 한다.
+                // 근데, leftjoin(team) 이렇게, 하나만 적게 되면 PK,FK로 Join하지 않고
+                // 뒤에 오는 on 절에 의해서만 join이 된다
+                // (하이버네이트5.1부터 연관 관계가 아닌 엔티티끼리 on을 이용하여 외부조인 가능해짐) : leftJoin(객체1개만).ON(~~)
+                // (물론, 내부 조인도 가능)
+                .on(member.username.eq(team.name))
+                .fetch();
+
+        for (Tuple tuple : result) {
+            System.out.println("tuple = " + tuple);
+        }
+
+    }
 
 
 }
