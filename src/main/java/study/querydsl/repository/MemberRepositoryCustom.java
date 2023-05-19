@@ -15,6 +15,7 @@ public interface MemberRepositoryCustom {
     // select condition에 따른 [동적] 쿼리 구현
     List<MemberTeamDto> search(MemberSearchCondition condition);
     Page<MemberTeamDto> searchPageSimple(MemberSearchCondition condition, Pageable pageable);
-    Page<MemberTeamDto> searchPageComplex(MemberSearchCondition condition, Pageable pageable);
+    Page<MemberTeamDto> searchPageComplex1(MemberSearchCondition condition, Pageable pageable);
+    Page<MemberTeamDto> searchPageComplex2(MemberSearchCondition condition, Pageable pageable);
 
 }

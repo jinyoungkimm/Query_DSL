@@ -126,7 +126,7 @@ class MemberRepositoryTest {
         PageRequest pageRequest = PageRequest.of(0, 3);
 
 
-        Page<MemberTeamDto> result = repository.searchPageComplex(condition, pageRequest);
+        Page<MemberTeamDto> result = repository.searchPageComplex2(condition, pageRequest);
 
         assertThat(result.getSize()).isEqualTo(3);
         assertThat(result.getContent()).extracting("username").containsExactly("member1","member2","member3");

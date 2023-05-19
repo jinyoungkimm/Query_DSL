@@ -2,16 +2,19 @@ package study.querydsl.repository;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Repository;
 import study.querydsl.dto.MemberSearchCondition;
 import study.querydsl.dto.MemberTeamDto;
 import study.querydsl.dto.QMemberTeamDto;
+import study.querydsl.entity.Member;
 
 import java.util.List;
 
@@ -81,7 +84,7 @@ public class MemberRepositoryImpl implements MemberRepositoryCustom{
     }
 
     @Override
-    public Page<MemberTeamDto> searchPageComplex(MemberSearchCondition condition, Pageable pageable) {
+    public Page<MemberTeamDto> searchPageComplex1(MemberSearchCondition condition, Pageable pageable) {
 
 
         List<MemberTeamDto> contents = queryFactory
@@ -124,6 +127,49 @@ public class MemberRepositoryImpl implements MemberRepositoryCustom{
  */
 
     return new PageImpl<>(contents,pageable,total);
+    }
+
+    @Override // [전체 카운트] 쿼리를 날리지 않아도, [전체 카운트]를 알 수 있는 경우가 있다.
+    public Page<MemberTeamDto> searchPageComplex2(MemberSearchCondition condition, Pageable pageable) {
+
+        List<MemberTeamDto> contents = queryFactory
+                .select(new QMemberTeamDto(
+                        member.id,
+                        member.username,
+                        member.age,
+                        team.id,
+                        team.name))
+                .from(member)
+                .leftJoin(member.team, team)
+                .where(
+                        usernameEq(condition.getUsername()),
+                        teamNameEq(condition.getTeamName()),
+                        ageGoe(condition.getAgeGoe()),
+                        ageLoe(condition.getAgeLoe()))
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+
+        JPAQuery<Member> countQuery = queryFactory
+                .select(member)
+                .from(member)
+                .leftJoin(member.team, team)
+                .where(
+                        usernameEq(condition.getUsername()),
+                        teamNameEq(condition.getTeamName()),
+                        ageGoe(condition.getAgeGoe()),
+                        ageLoe(condition.getAgeLoe()));
+        // fetchCount()를 하기 전에는 위 코드에서 [전체 카운트] 용 쿼리가 날라 가지 않는다.
+
+        /**
+         * 만약에 1개의 page의 size가 100개라고 하자. 근데, content의 size는 3개이다.
+         * 그러면, 굳이 [전체 카운트] 쿼리를 날리지 않아도, content.size()를 통해서 [전체 카운트]를 알 수가 있다.
+         * -> 페이지의 size()가 content의 size()보다 클 때는 쿼리를 날리지 않고,
+         * 작을 때는 쿼리를 날리게 하는 방법이 아래와 같다.
+         */
+
+        return PageableExecutionUtils.getPage(contents,pageable,()-> countQuery.fetchCount());
     }
 
     private BooleanExpression ageLoe(Integer ageLoe) {
