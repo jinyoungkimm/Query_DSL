@@ -95,7 +95,7 @@ class MemberJpaRepositoryTest {
     condition.setTeamName("teamB");
 
     // 생성한 selection condition을 가지고, select!
-    List<MemberTeamDto> result = repository.searchByBuilder(condition);
+    List<MemberTeamDto> result = repository.search(condition);
 
     assertThat(result).extracting("username").containsExactly("member4");}
 

@@ -2,6 +2,8 @@ package study.querydsl.repository;
 
 
 import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.types.Predicate;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
@@ -112,5 +114,70 @@ public class MemberJpaRepository {
                 .fetch();
 
     }
+
+    // Where절에 다중 파라미터로 동적 쿼리 구현
+    public List<MemberTeamDto> search(MemberSearchCondition condition){
+
+        return queryFactory
+                .select(new QMemberTeamDto(
+                        member.id.as("member_id"),
+                        member.username,
+                        member.age,
+                        team.id.as("team_id"),
+                        team.name.as("teamName")
+                ))
+                .from(member)
+                .where(
+                        usernameEq(condition.getUsername()),
+                        teamNamedEq(condition.getTeamName()),
+                        ageGoe(condition.getAgeGoe()),
+                        ageLoe(condition.getAgeLoe()))
+                .fetch();
+
+
+    }
+
+    private BooleanExpression ageLoe(Integer ageLoe) {
+
+        if(ageLoe != null)
+            return member.age.loe(ageLoe);
+        else
+            return null;
+
+
+
+    }
+
+    private BooleanExpression ageGoe(Integer ageGoe) {
+
+        if(ageGoe != null)
+            return member.age.goe(ageGoe);
+        else
+            return null;
+
+
+    }
+
+
+
+    private BooleanExpression teamNamedEq(String teamName) {
+
+        if(teamName != null)
+            return team.name.eq(teamName);
+        else
+            return null;
+    }
+
+
+
+
+    private BooleanExpression usernameEq(String username) {
+
+    if(username != null)
+        return member.username.eq(username);
+    else
+        return null;
+    }
+
 
 }
