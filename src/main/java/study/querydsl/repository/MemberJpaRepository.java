@@ -22,6 +22,7 @@ import study.querydsl.entity.QTeam;
 import java.util.List;
 import java.util.Optional;
 
+import static org.apache.logging.log4j.util.Strings.isEmpty;
 import static study.querydsl.entity.QMember.member;
 import static study.querydsl.entity.QTeam.team;
 
@@ -30,6 +31,7 @@ public class MemberJpaRepository {
 
 
     private final JPAQueryFactory queryFactory;
+
     private final EntityManager entityManager;
 
     public MemberJpaRepository(EntityManager em){
@@ -116,56 +118,42 @@ public class MemberJpaRepository {
     }
 
     // Where절에 다중 파라미터로 동적 쿼리 구현
-    public List<MemberTeamDto> search(MemberSearchCondition condition){
-
+    public List<MemberTeamDto> search(MemberSearchCondition condition) {
         return queryFactory
                 .select(new QMemberTeamDto(
-                        member.id.as("member_id"),
+                        member.id,
                         member.username,
                         member.age,
-                        team.id.as("team_id"),
-                        team.name.as("teamName")
-                ))
+                        team.id,
+                        team.name))
                 .from(member)
+                .leftJoin(member.team, team)
                 .where(
                         usernameEq(condition.getUsername()),
-                        teamNamedEq(condition.getTeamName()),
+                        teamNameEq(condition.getTeamName()),
                         ageGoe(condition.getAgeGoe()),
                         ageLoe(condition.getAgeLoe()))
                 .fetch();
-
-
     }
 
     private BooleanExpression ageLoe(Integer ageLoe) {
 
-        if(ageLoe != null)
-            return member.age.loe(ageLoe);
-        else
-            return null;
-
-
+        return ageLoe == null ? null : member.age.loe(ageLoe);
 
     }
 
     private BooleanExpression ageGoe(Integer ageGoe) {
 
-        if(ageGoe != null)
-            return member.age.goe(ageGoe);
-        else
-            return null;
+        return ageGoe == null ? null : member.age.goe(ageGoe);
 
 
     }
 
 
 
-    private BooleanExpression teamNamedEq(String teamName) {
+    private BooleanExpression teamNameEq(String teamName) {
 
-        if(teamName != null)
-            return team.name.eq(teamName);
-        else
-            return null;
+        return isEmpty(teamName) ? null : team.name.eq(teamName);
     }
 
 
@@ -173,10 +161,7 @@ public class MemberJpaRepository {
 
     private BooleanExpression usernameEq(String username) {
 
-    if(username != null)
-        return member.username.eq(username);
-    else
-        return null;
+        return isEmpty(username) ? null : member.username.eq(username);
     }
 
 
