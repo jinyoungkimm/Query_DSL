@@ -34,6 +34,7 @@ public class MemberJpaRepository {
 
     private final EntityManager entityManager;
 
+    // 생성자가 1개일 떄에는 자동으로 @Autowired가 붙는다.
     public MemberJpaRepository(EntityManager em){
         this.entityManager = em;
         this.queryFactory = new JPAQueryFactory(em);
